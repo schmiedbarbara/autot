@@ -1,567 +1,243 @@
-Este README explica qué hace el script `convertir_ldebliqd_a_rdebliqc_corregido.py`, por qué existe, cómo funciona cada parte y cómo usarlo cada vez que necesites convertir un archivo.
+# CentroCultural - Plataforma de Actividades Culturales
+¡Bienvenidos al Centro Cultural UNGS!
+La aplicación permite a los usuarios de la comunidad explorar, buscar y publicar actividades culturales y educativas en la zona. Proporciona una interfaz intuitiva para conectar colaboradores con la comunidad.
 
 ---
 
-## 1. Objetivo
+## 📋 Tabla de Contenidos
 
-El script convierte archivos de devolución de débito `LDEBLIQD` a una estructura compatible con archivos de devolución de crédito `RDEBLIQC`.
-
-Esto se hizo porque el stored procedure existente lee correctamente archivos `RDEBLIQC`, pero no procesa directamente los archivos `LDEBLIQD`.
-
-Ejemplo:
-
-```text
-Entrada: LDEBLIQD_202605120950.txt
-Salida:  RDEBLIQC_202605120950.txt
-```
-
-El archivo convertido conserva la fecha y hora del nombre original. Solo cambia el prefijo:
-
-```text
-LDEBLIQD -> RDEBLIQC
-```
-
-Importante: el archivo generado es un adaptador interno para el sistema. No es un archivo oficial original emitido por Payway.
+- [Descripción](#descripción)
+- [Características](#características)
+- [Cómo Empezar](#cómo-empezar)
+- [Estructura del Proyecto](#estructura-del-proyecto)
+- [Tecnologías Utilizadas](#tecnologías-utilizadas)
+- [Validaciones](#validaciones)
+- [Consideraciones Generales](#consideraciones-generales)
 
 ---
 
-## 2. Qué hace el script
+## 📝 Descripción
 
-El script realiza estos pasos:
-
-1. Lee el archivo `LDEBLIQD`.
-2. Separa encabezado, cuerpo y cierre.
-3. Recorre las líneas del cuerpo.
-4. Detecta cuáles partidas no tienen motivo de rechazo.
-5. Omite las partidas rechazadas.
-6. Convierte las partidas aprobadas al formato fijo de `RDEBLIQC`.
-7. Genera un nuevo encabezado `RDEBLIQC`.
-8. Genera un nuevo cierre `RDEBLIQC`.
-9. Recalcula la cantidad de registros exportados.
-10. Recalcula el importe total exportado.
-11. Guarda el archivo en una carpeta de salida.
+CentroCultural es una plataforma web que facilita el registro y descubrimiento de talleres y actividades culturales en la comunidad. La aplicación implementa un sistema de autenticación seguro y validación de datos.
+- **Usuarios no autenticados** (visitantes)
+- **Usuarios autenticados** (colaboradores)
 
 ---
 
-## 3. Regla principal: solo partidas sin rechazo
+## ✨ Características
 
-El archivo `LDEBLIQD` puede traer operaciones aprobadas y rechazadas.
+### Para Usuarios No Autenticados (Visitantes)
 
-El script solo exporta las partidas aprobadas.
+- ✅ **Explorar centros y talleres** - Acceder al listado general de actividades disponibles
+- ✅ **Buscar actividades** - Por nombre del curso o dirección/ubicación
+- ✅ **Interactuar con el mapa** - Ver zonas geográficas y seleccionar actividades
+- ✅ **Ver información general** - Conocer sobre el Centro Cultural UNGS
 
-Una partida se considera aprobada cuando:
+### Para Usuarios Autenticados (Colaboradores)
 
-```python
-codigo_rechazo == "" or codigo_rechazo == "000"
-```
+- ✅ **Registrar talleres** - Crear nuevos centros/talleres con validación de datos
+- ✅ **Gestionar talleres** - Ver, editar y eliminar talleres propios
+- ✅ **Sección "Mis Talleres"** - Panel personal con:
+  - Listado de talleres registrados
+  - Búsqueda y filtrado por nombre/dirección
+  - Mapa interactivo con ubicaciones
+  - Opciones de gestión
 
-Y además:
-
-```python
-motivo_rechazo == ""
-```
-
-Si una línea tiene código o descripción de rechazo, se omite.
-
-Ejemplos de partidas omitidas:
-
-```text
-019 OPERACION NO PERMITIDA PARA ESA TARJETA
-020 RECHAZADA POR EL EMISOR DE LA TARJETA
-034 SE REINTENTARA AUTORIZACION AUTOMATICA
-```
+- ✅ **Explorar otros talleres** - Ver actividades de otros colaboradores
 
 ---
 
-## 4. Por qué el archivo debe tener 300 caracteres por línea
+## 🚀 Cómo Empezar
 
-El stored procedure lee el archivo por posiciones fijas.
+### Requisitos Previos
 
-Eso significa que espera encontrar cada dato en una posición exacta.
+- **Visual Studio Code** - Descarga desde [code.visualstudio.com](https://code.visualstudio.com)
+- Navegador web moderno (Chrome, Firefox, Safari, Edge)
+- Conexión a internet (para geocodificación y mapas)
 
-Por ejemplo:
+### Instalación y Ejecución
 
-```text
-posición X = importe
-posición Y = fecha
-posición Z = estado
-```
+1. **Abre la carpeta del proyecto en VS Code**
+   - Archivo → Abrir Carpeta → Selecciona la carpeta `CentroCultural`
 
-Si una línea queda corrida, Oracle puede intentar convertir un espacio o texto a número y generar este error:
+2. **Abre `index.html` en el navegador**
+   - Opción A: Haz clic derecho en `index.html` → "Abrir con Live Server" (si tienes la extensión)
+   - Opción B: Haz doble clic en `index.html` para abrir en tu navegador predeterminado
 
-```text
-ORA-06502: PL/SQL: error de conversión de carácter a número
-```
+3. **Comienza a explorar**
+   - La plataforma se cargará completamente en tu navegador
 
-Por eso el script corregido garantiza que:
+### Primeros Pasos
 
-- cada línea tenga exactamente 300 caracteres;
-- el `*` quede siempre en la última posición;
-- los campos numéricos se completen con ceros;
-- los campos vacíos se completen con espacios.
-
----
-
-## 5. Estructura del archivo generado
-
-El archivo final tiene tres partes:
-
-```text
-ENCABEZADO
-CUERPO
-CIERRE
-```
-
-Ejemplo conceptual:
-
-```text
-0RDEBLIQC...
-1...
-1...
-1...
-9RDEBLIQC...
-```
-
-El encabezado empieza con `0RDEBLIQC`.
-
-El cuerpo contiene solo las partidas aprobadas.
-
-El cierre empieza con `9RDEBLIQC`.
+1. **Visitar la plataforma** - La página principal se abrirá automáticamente
+2. **Explorar sin registrarse** - Busca talleres en el mapa
+3. **Registrarse como colaborador** - Haz clic en "Registrarse como Colaborador"
+4. **Crear tu primer taller** - Accede a "Panel del Colaborador" y registra un taller
+5. **Buscar tus talleres** - Ve a "Mis Talleres" para ver tus creaciones
 
 ---
 
-## 6. Explicación de cada función
+## 📁 Estructura del Proyecto
+
+```
+CentroCultural/
+├── index.html                          # Página principal (inicio/login)
+├── registro.html                       # Formulario de registro de colaboradores
+├── pantallaUsuario.html               # Panel del colaborador (registrar talleres)
+├── misTalleres.html                   # Vista de talleres del usuario
+├── app.js                             # Orquestador principal (inicializador)
+├── style.css                          # Estilos globales
+├── style-registro.css                 # Estilos formulario de registro
+├── style-pantallaUsuario.css          # Estilos panel del colaborador
+├── style-misTalleres.css              # Estilos vista "Mis Talleres"
+├── img/                               # Imágenes y recursos
+│   └── ubicacion.png                  # Icono de marcador del mapa
+│   └── qr.jpg                         # Código QR de la app
+│
+└── modulos/                           # Módulos funcionales (separación de responsabilidades)
+    ├── autenticacion.js               # Login, registro, sesiones
+    ├── talleres.js                    # CRUD de talleres/centros
+    ├── mapa.js                        # Mapa, marcadores, geocodificación
+    ├── busqueda.js                    # Filtrado y búsqueda de talleres
+    └── validaciones.js                # Validaciones de datos
+```
+
+### Descripción de Módulos
+
+| Módulo | Responsabilidad |
+|--------|-----------------|
+| **autenticacion.js** | Registro, login, cierre de sesión, gestión de usuario activo, navegación dinámica |
+| **talleres.js** | Crear, leer, actualizar y eliminar talleres; mostrar en lista y mapa |
+| **mapa.js** | Inicializar mapa (Leaflet), gestionar marcadores, geocodificar direcciones |
+| **busqueda.js** | Filtrar talleres por nombre o dirección en tiempo real |
+| **validaciones.js** | Validar tipos de datos, formatos y campos obligatorios |
 
 ---
 
-## 6.1. `ajustar(linea, largo)`
+## 🛠️ Tecnologías Utilizadas
 
-```python
-def ajustar(linea: str, largo: int) -> str:
-    linea = linea.rstrip("\r\n")
-    return linea[:largo].ljust(largo)
-```
-
-Esta función normaliza una línea a un largo fijo.
-
-Hace tres cosas:
-
-1. Quita saltos de línea.
-2. Si la línea es más larga que el largo esperado, la corta.
-3. Si la línea es más corta, la completa con espacios.
-
-Ejemplo:
-
-```python
-ajustar("ABC", 5)
-```
-
-Devuelve:
-
-```text
-ABC  
-```
-
-Esto es necesario porque los archivos son de ancho fijo.
+- **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
+- **Mapa**: [Leaflet.js](https://leafletjs.com/) - Mapas interactivos open-source
+- **Geocodificación**: API USIG Buenos Aires
+- **Almacenamiento**: localStorage (datos locales en navegador)
+- **Estilos**: CSS puro (sin frameworks)
 
 ---
 
-## 6.2. `fecha_aaaammdd_a_ddmmaa(fecha)`
+## ✅ Validaciones Implementadas
 
-```python
-def fecha_aaaammdd_a_ddmmaa(fecha: str) -> str:
-    if len(fecha) == 8 and fecha.isdigit():
-        return fecha[6:8] + fecha[4:6] + fecha[2:4]
-    return " " * 6
-```
+### Registro de Colaboradores
 
-Convierte la fecha del formato del archivo de débito:
+| Campo | Validación | Obligatorio |
+|-------|-----------|------------|
+| Nombre | Solo letras, 2+ caracteres | ✓ |
+| Apellido | Solo letras, 2+ caracteres | ✓ |
+| Teléfono | 10+ dígitos, formatos varios | ✓ |
+| Email | Formato válido (usuario@dominio.com) | ✓ |
+| Contraseña | 6+ caracteres, 1 mayúscula, 1 número | ✓ |
 
-```text
-AAAAMMDD
-```
+### Login
 
-al formato usado dentro del cuerpo del archivo de crédito:
+| Campo | Validación | Obligatorio |
+|-------|-----------|------------|
+| Email | Requerido | ✓ |
+| Contraseña | Requerido | ✓ |
 
-```text
-DDMMAA
-```
+### Registro de Talleres
 
-Ejemplo:
+| Campo | Validación | Obligatorio |
+|-------|-----------|------------|
+| Nombre | 3+ caracteres | ✓ |
+| Descripción | 10+ caracteres | ✓ |
+| Rubro | Selección de opciones predefinidas | ✓ |
+| Actividades | Texto libre | ✗ |
+| Dirección | Formato: "Calle NRO, Localidad" + geocodificación | ✓ |
+| Horarios | Franja horaria predefinida | ✓ |
+| Teléfono | 10+ dígitos | ✓ |
+| Redes Sociales | Texto libre | ✗ |
+| Foto/Imagen | URL válida si se completa | ✗ |
 
-```text
-20260512 -> 120526
-```
+### Características de Validación
 
----
-
-## 6.3. `parsear_ldebliqd(linea)`
-
-```python
-def parsear_ldebliqd(linea: str) -> dict:
-```
-
-Esta función toma una línea del cuerpo del `LDEBLIQD` y extrae los campos importantes usando posiciones fijas.
-
-Campos extraídos:
-
-| Campo | Posición | Descripción |
-|---|---:|---|
-| `registro` | `0:1` | Tipo de registro. En cuerpo debe ser `1`. |
-| `tarjeta` | `1:17` | Número de tarjeta. |
-| `factura` | `20:28` | Número de factura o secuencial. |
-| `fecha` | `28:36` | Fecha en formato `AAAAMMDD`. |
-| `cod_transaccion` | `36:40` | Código de transacción. |
-| `importe` | `40:55` | Importe con dos decimales implícitos. |
-| `id_cliente` | `55:70` | ID del cliente. |
-| `alta` | `70:71` | Código de alta de identificador. |
-| `codigo_rechazo` | `100:103` | Código de rechazo. |
-| `motivo_rechazo` | `103:143` | Descripción del rechazo. |
-
-Devuelve un diccionario con esos datos.
+- ✅ **Mensajes de error contextuales** - Cada campo muestra su error específico
+- ✅ **Validación en tiempo de envío** - Se valida antes de guardar datos
+- ✅ **Estilos visuales** - Campos con error se resaltan en rojo
+- ✅ **Campos obligatorios marcados** - Asterisco rojo (*) en labels
+- ✅ **Límites de caracteres** - maxlength en inputs
+- ✅ **Geocodificación de direcciones** - Valida direcciones en Buenos Aires
 
 ---
 
-## 6.4. `es_aprobado(data)`
+## 📦 Almacenamiento de Datos
 
-```python
-def es_aprobado(data: dict) -> bool:
-    codigo = data["codigo_rechazo"].strip()
-    motivo = data["motivo_rechazo"].strip()
+Los datos se almacenan en **localStorage** del navegador:
 
-    return (codigo == "" or codigo == "000") and motivo == ""
+```javascript
+// Colaboradores registrados
+localStorage.getItem("colaboradoresPortal")
+
+// Talleres creados
+localStorage.getItem("talleres")
+
+// Usuario activo (sesión actual)
+localStorage.getItem("usuarioActivo")
 ```
 
-Decide si una línea debe pasar al archivo final.
-
-Devuelve `True` si no tiene rechazo.
-
-Devuelve `False` si tiene código o motivo de rechazo.
+**Nota**: Los datos se pierden si el navegador se limpia. Para producción, integrar con base de datos backend.
 
 ---
 
-## 6.5. `linea_con_asterisco_final(contenido, largo)`
+## 🔧 Desarrollo y Mantenimiento
 
-```python
-def linea_con_asterisco_final(contenido: str, largo: int) -> str:
-    return contenido[:largo - 1].ljust(largo - 1) + "*"
-```
+### Agregar un Nuevo Campo a Talleres
 
-Esta función garantiza que el `*` quede exactamente al final de la línea.
+1. Agregar input en `pantallaUsuario.html`
+2. Agregar validador en `modulos/validaciones.js`
+3. Actualizar función `registrarTaller()` en `modulos/talleres.js`
+4. Actualizar función `crearTarjeta()` para mostrar el campo
 
-Para una línea de 300 caracteres:
+### Cambiar Rubros o Franjas Horarias
 
-```text
-caracteres 1 a 299 = contenido y espacios
-caracter 300 = *
-```
+- Edita los `<option>` en los `<select>` de `pantallaUsuario.html`
 
-Esta fue una de las correcciones más importantes, porque antes el `*` podía quedar antes de tiempo y desalinear el layout.
+### Personalizar Estilos
 
----
-
-## 6.6. `construir_header_rdebliqc(...)`
-
-```python
-def construir_header_rdebliqc(establecimiento: str, fecha: str, hora: str) -> str:
-```
-
-Construye el encabezado del archivo final.
-
-El encabezado contiene:
-
-| Campo | Descripción |
-|---|---|
-| `0` | Indica encabezado. |
-| `RDEBLIQC` | Tipo de archivo esperado por el SP. |
-| `900000    ` | Campo fijo. |
-| `establecimiento` | Tomado del archivo original. |
-| `fecha` | Fecha original del archivo. |
-| `hora` | Hora original del archivo. |
-| espacios | Relleno. |
-| `*` | Fin de línea. |
+- Cada página HTML tiene su propio CSS:
+  - `style.css` - Estilos globales
+  - `style-registro.css` - Formulario de registro
+  - `style-pantallaUsuario.css` - Panel del colaborador
+  - `style-misTalleres.css` - Vista de "Mis Talleres"
 
 ---
 
-## 6.7. `construir_cuerpo_rdebliqc(data, establecimiento)`
+## 🚨 Consideraciones Generales
 
-```python
-def construir_cuerpo_rdebliqc(data: dict, establecimiento: str) -> str:
-```
-
-Esta función convierte una operación aprobada del `LDEBLIQD` en una línea compatible con `RDEBLIQC`.
-
-Toma datos reales del archivo original y completa los campos que no existen en débito con ceros o espacios.
-
-Datos que se conservan del `LDEBLIQD`:
-
-| Dato | Uso en salida |
-|---|---|
-| Tarjeta | Se copia al cuerpo `RDEBLIQC`. |
-| Factura/secuencial | Se copia al cuerpo `RDEBLIQC`. |
-| Fecha | Se convierte de `AAAAMMDD` a `DDMMAA`. |
-| Código de transacción | Se copia. |
-| Importe | Se copia. |
-| ID cliente | Se copia. |
-| Código de alta | Se copia. |
-| Establecimiento | Se toma del encabezado original. |
-
-Campos completados artificialmente para compatibilidad:
-
-| Campo | Valor usado | Motivo |
-|---|---|---|
-| Banco pagador | `000` | No viene igual en débito. |
-| Sucursal | `000` | Requerido por layout crédito. |
-| Lote | `0000` | Requerido por layout crédito. |
-| Cuenta | `0000000000` | Campo obligatorio en layout crédito. |
-| Estado | `0` | Porque solo se exportan aprobados. |
-| Rechazo 1 | `00` | Sin rechazo. |
-| Descripción rechazo 1 | espacios | Sin rechazo. |
-| Rechazo 2 | `00` | Sin segundo rechazo. |
-| Tarjeta nueva | espacios | No aplica. |
-| Fecha de pago | espacios | No se informa. |
-| Cartera | `00` | Valor fijo compatible. |
+- **No es necesario estar logueado** para explorar o buscar actividades
+- **Es obligatorio iniciar sesión** para registrar talleres o centros
+- **Todos los usuarios** pueden acceder a la información general del Centro Cultural UNGS
+- **Los datos se guardan localmente** en el navegador (localStorage)
+- **La geocodificación funciona en Buenos Aires** mediante la API USIG
 
 ---
 
-## 6.8. `construir_trailer_rdebliqc(...)`
+## 📋 Mejoras Futuras
 
-```python
-def construir_trailer_rdebliqc(establecimiento, fecha, hora, cantidad, total)
-```
-
-Construye el cierre del archivo final.
-
-Incluye:
-
-| Campo | Descripción |
-|---|---|
-| `9` | Indica cierre. |
-| `RDEBLIQC` | Tipo de archivo esperado por el SP. |
-| `900000    ` | Campo fijo. |
-| `establecimiento` | Tomado del archivo original. |
-| `fecha` | Fecha original. |
-| `hora` | Hora original. |
-| `cantidad` | Cantidad de registros aprobados exportados. |
-| `total` | Suma de importes aprobados exportados. |
-| espacios | Relleno. |
-| `*` | Fin de línea. |
-
-Ejemplo:
-
-```text
-cantidad = 53 -> 0000053
-total = 261185548 -> 000000261185548
-```
+- [ ] Backend con base de datos (Node.js, Python, etc.)
+- [ ] Autenticación con tokens JWT
+- [ ] Validación de email con confirmación
+- [ ] Búsqueda avanzada y filtros
+- [ ] Ratings y comentarios de usuarios
+- [ ] Notificaciones en tiempo real
+- [ ] Aplicación móvil (React Native, Flutter)
+- [ ] Panel de administración
 
 ---
 
-## 6.9. `convertir_archivo(ruta_entrada, carpeta_salida)`
+## 📧 Contacto y Soporte
 
-```python
-def convertir_archivo(ruta_entrada: str, carpeta_salida: str | None = None) -> Path:
-```
-
-Es la función principal.
-
-Hace todo el flujo:
-
-1. Recibe el archivo de entrada.
-2. Define la carpeta de salida.
-3. Crea la carpeta de salida si no existe.
-4. Cambia el nombre de salida de `LDEBLIQD` a `RDEBLIQC`.
-5. Lee el archivo completo.
-6. Extrae encabezado, cuerpo y cierre.
-7. Obtiene establecimiento, fecha y hora del encabezado.
-8. Recorre cada línea del cuerpo.
-9. Parsea cada línea.
-10. Filtra las rechazadas.
-11. Convierte las aprobadas.
-12. Acumula cantidad e importe.
-13. Genera encabezado nuevo.
-14. Genera cierre nuevo.
-15. Escribe el archivo final.
-16. Imprime un resumen.
+Para reportar bugs o sugerir mejoras, contacta al equipo de desarrollo del Centro Cultural UNGS.
 
 ---
 
-## 7. Cómo usarlo
-
-## 7.1. Requisitos
-
-Necesitás tener instalado Python 3.
-
-No requiere librerías externas.
-
-No necesitás instalar pandas, numpy ni nada adicional.
-
----
-
-## 7.2. Carpetas recomendadas
-
-Crear esta estructura:
-
-```text
-C:\Debitos
-C:\Debitos\Entrada
-C:\Debitos\Convertidos
-```
-
-Guardar el script en:
-
-```text
-C:\Debitos\convertir_ldebliqd_a_rdebliqc_corregido.py
-```
-
-Guardar los archivos originales en:
-
-```text
-C:\Debitos\Entrada
-```
-
-El script genera los convertidos en:
-
-```text
-C:\Debitos\Convertidos
-```
-
----
-
-## 7.3. Ejecutarlo desde CMD
-
-Ejemplo:
-
-```bash
-python C:\Debitos\convertir_ldebliqd_a_rdebliqc_corregido.py C:\Debitos\Entrada\LDEBLIQD_202605120950.txt
-```
-
-Salida esperada:
-
-```text
-Archivo generado: C:\Debitos\Convertidos\RDEBLIQC_202605120950.txt
-Registros leídos: 83
-Registros exportados sin rechazo: 53
-Registros omitidos por rechazo: 30
-Importe total exportado: 261185548
-```
-
----
-
-## 7.4. Ejecutarlo indicando carpeta de salida
-
-También podés pasar una carpeta de salida manualmente:
-
-```bash
-python C:\Debitos\convertir_ldebliqd_a_rdebliqc_corregido.py C:\Debitos\Entrada\LDEBLIQD_202605120950.txt C:\OtraCarpeta\Salida
-```
-
----
-
-## 8. Uso diario recomendado
-
-Cada vez que necesites convertir un archivo:
-
-1. Descargar el archivo `LDEBLIQD`.
-2. Guardarlo en `C:\Debitos\Entrada`.
-3. Ejecutar el script.
-4. Buscar el archivo convertido en `C:\Debitos\Convertidos`.
-5. Cargar el archivo `RDEBLIQC` generado en el proceso habitual.
-
----
-
-## 9. Errores comunes
-
-## 9.1. `python no se reconoce como comando`
-
-Python no está instalado o no fue agregado al PATH.
-
-Solución:
-
-1. Instalar Python.
-2. Marcar `Add Python to PATH` durante la instalación.
-3. Cerrar y volver a abrir CMD.
-
----
-
-## 9.2. `ORA-06502`
-
-Este error aparece cuando Oracle intenta convertir a número un campo que no es numérico.
-
-Puede pasar si:
-
-- la línea no tiene 300 caracteres;
-- el `*` no está al final;
-- el layout quedó corrido;
-- el archivo fue modificado manualmente;
-- se abrió y guardó desde Excel;
-- se usó un archivo incorrecto.
-
-El script corregido evita este problema generando líneas fijas de 300 caracteres.
-
----
-
-## 9.3. El archivo convertido tiene menos registros
-
-Es correcto.
-
-El script solo exporta partidas sin rechazo.
-
-Las partidas con motivo de rechazo se omiten.
-
----
-
-## 10. Recomendaciones importantes
-
-No abrir ni guardar estos archivos con Excel.
-
-Excel puede romper el archivo porque puede:
-
-- sacar ceros a la izquierda;
-- modificar espacios;
-- cambiar el formato;
-- alterar el ancho fijo.
-
-Para revisar el archivo, usar:
-
-- VS Code;
-- Notepad++;
-- Bloc de notas.
-
----
-
-## 11. Resumen final
-
-El script toma:
-
-```text
-LDEBLIQD con aprobados y rechazados
-```
-
-filtra:
-
-```text
-solo aprobados
-```
-
-y genera:
-
-```text
-RDEBLIQC compatible con el stored procedure
-```
-
-Mantiene:
-
-- nombre base del archivo;
-- fecha y hora;
-- establecimiento;
-- tarjeta;
-- importe;
-- ID cliente;
-- factura/secuencial;
-- código de transacción.
-
-Y recalcula:
-
-- cantidad de registros exportados;
-- importe total del cierre.
+**Última actualización**: Mayo 2026
 
