@@ -2,7 +2,7 @@
 
 ## Descripción del Proyecto
 
-El **Portal Web del Centro Cultural UNGS** es una aplicación web de página múltiple (*Multi-Page Application*) desarrollada con tecnologías estándar del lado del cliente (HTML5, CSS3 y JavaScript vanilla), cuyo propósito es facilitar la difusión, búsqueda y registro de talleres y actividades culturales y educativas en el área de influencia de la Universidad Nacional de General Sarmiento (UNGS).
+El **Portal Web del Centro Cultural UNGS** es una aplicación web de página múltiple desarrollada con tecnologías (HTML5, CSS3 y JavaScript), cuyo propósito es facilitar la difusión, búsqueda y registro de talleres y actividades culturales y educativas en el área de influencia de la Universidad Nacional de General Sarmiento (UNGS).
 
 La aplicación permite a integrantes de la comunidad publicar sus propios talleres o centros culturales, y a cualquier visitante explorarlos mediante un listado interactivo con búsqueda por texto y visualización georreferenciada en mapa. No requiere infraestructura de servidor ni base de datos externa: toda la persistencia se gestiona mediante la API `localStorage` del navegador.
 
@@ -23,7 +23,7 @@ La aplicación permite a integrantes de la comunidad publicar sus propios taller
 
 ## Características Principales
 
-- **Exploración pública** de talleres y centros culturales sin necesidad de autenticación.
+- **Exploración pública** de talleres y centros culturales sin necesidad de autenticación, a menos que se desee registrar talleres.
 - **Búsqueda en tiempo real** por nombre del taller o dirección.
 - **Mapa interactivo** (Leaflet.js + OpenStreetMap) con marcadores geolocalizados para cada actividad.
 - **Registro de usuarios** (*colaboradores*) con validación de campos en el cliente.
@@ -40,14 +40,14 @@ La aplicación permite a integrantes de la comunidad publicar sus propios taller
 |---|---|
 | Maquetado | HTML5 semántico |
 | Estilos | CSS3 (archivos por vista) |
-| Lógica de negocio | JavaScript ES6+ (vanilla, sin frameworks) |
+| Lógica de negocio | JavaScript ES6+ (sin frameworks) |
 | Mapas | [Leaflet.js](https://leafletjs.com/) v1.x (CDN) |
 | Tiles cartográficos | OpenStreetMap |
 | Geocodificación | API USIG — Gobierno de la Ciudad de Buenos Aires |
 | Persistencia | `localStorage` del navegador |
 | Hosting recomendado | Cualquier servidor HTTP estático (GitHub Pages, Netlify, Live Server, etc.) |
 
-La aplicación sigue un patrón de **módulos JavaScript independientes** cargados secuencialmente en el HTML. Cada módulo expone funciones globales que son invocadas por `app.js` (coordinador principal) o directamente desde los atributos de evento del HTML.
+La aplicación sigue un patrón de **módulos JavaScript independientes** cargados secuencialmente en el HTML. Cada módulo expone funciones globales que son invocadas por `app.js` (coordinador principal) o directamente desde los atributos de evento del HTML, separando de manera correcta las diferentes funcionalidades del sistema.
 
 ---
 
@@ -114,7 +114,7 @@ Implementa el filtrado en tiempo real sobre la lista de talleres visible:
 - `filtrarTalleres()`: itera sobre las tarjetas del DOM y los marcadores del mapa, mostrando u ocultando cada elemento según si el texto ingresado coincide con el nombre o la dirección del taller.
 
 ### `validaciones.js`
-Biblioteca de funciones de validación sin efectos secundarios. Incluye validadores de formato (`esEmail`, `esTelefono`, `esUrl`, `esContraseniaValida`) y de campo (`validarNombre`, `validarDescripcion`, `validarDireccion`, etc.). Cada función de campo retorna un objeto `{ valido: Boolean, error: String }`.
+Biblioteca de funciones de validación. Incluye validadores de formato (`esEmail`, `esTelefono`, `esUrl`, `esContraseniaValida`) y de campo (`validarNombre`, `validarDescripcion`, `validarDireccion`, etc.). Cada función de campo retorna un objeto `{ valido: Boolean, error: String }`.
 
 ---
 
@@ -205,7 +205,7 @@ No se utilizan gestores de paquetes (npm, yarn) ni herramientas de construcción
 ## Consideraciones de Seguridad y Limitaciones
 
 - **Persistencia en cliente**: los datos (usuarios y talleres) se almacenan únicamente en el `localStorage` del navegador del usuario. No existe sincronización entre dispositivos ni respaldo en servidor. Limpiar los datos del navegador elimina toda la información.
-- **Contraseñas en texto plano**: las credenciales se almacenan sin cifrado en `localStorage`. Esta implementación es adecuada para prototipos académicos, pero no es apta para producción. En un entorno real se requeriría autenticación en servidor con hash de contraseñas (bcrypt, Argon2, etc.).
+- **Contraseñas en texto plano**: las credenciales se almacenan sin cifrado en `localStorage`. Se entiende que esta implementación es adecuada para prototipos académicos, pero no es apta para producción, por lo que se contempla como aspecto a mejorar para un entorno de producción. 
 - **Sin autorización en servidor**: la validación de autoría de talleres (que un usuario solo pueda eliminar los suyos) se realiza íntegramente en el cliente y puede ser eludida manipulando `localStorage`. Un sistema productivo requeriría validación en backend.
 - **Geocodificación limitada al área de Buenos Aires**: la API de USIG normaliza únicamente direcciones dentro del territorio de la Ciudad Autónoma de Buenos Aires. Direcciones de otras localidades del Gran Buenos Aires o del resto del país no serán geocodificadas correctamente.
 - **Compatibilidad de navegadores**: la aplicación requiere un navegador moderno compatible con ES6+, la API `fetch`, `localStorage` y `URL`. Se recomienda la versión actual de Chrome, Firefox, Edge o Safari.
@@ -216,7 +216,7 @@ No se utilizan gestores de paquetes (npm, yarn) ni herramientas de construcción
 
 Este proyecto es un **prototipo funcional** desarrollado en el marco de la materia **Ingeniería de Software** de la Universidad Nacional de General Sarmiento (UNGS).
 
-**Grupo 2 — Integrantes:**
+**Grupo 2 — Integrantes:** 
 
 | Apellido y nombre |
 |---|
