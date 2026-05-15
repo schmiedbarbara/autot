@@ -1,333 +1,226 @@
-# CentroCultural - Plataforma Web de Gestión de Actividades Culturales
+# Centro Cultural UNGS — Portal Web de Actividades Culturales y Educativas
 
-## Resumen Ejecutivo
+## Descripción del Proyecto
 
-CentroCultural es una aplicación web desarrollada para facilitar la exploración, búsqueda y publicación de actividades culturales y educativas en la comunidad universitaria. La plataforma implementa un sistema de autenticación basado en roles (visitante/colaborador) con validación robusta de datos y geolocalización interactiva mediante mapas.
+El **Portal Web del Centro Cultural UNGS** es una aplicación web de página múltiple (*Multi-Page Application*) desarrollada con tecnologías estándar del lado del cliente (HTML5, CSS3 y JavaScript vanilla), cuyo propósito es facilitar la difusión, búsqueda y registro de talleres y actividades culturales y educativas en el área de influencia de la Universidad Nacional de General Sarmiento (UNGS).
 
----
-
-## 1. Ejecución del Programa
-
-### 1.1 Requisitos Previos
-
-- **Visual Studio Code** - Editor recomendado ([descargar](https://code.visualstudio.com))
-- Navegador web moderno (Chrome, Firefox, Safari, Edge)
-- Conexión a internet (requerida para geocodificación y mapas)
-
-### 1.2 Instalación
-
-1. Descargar o clonar el repositorio
-2. Abrir la carpeta en Visual Studio Code: `Archivo → Abrir Carpeta`
-3. Ejecutar `index.html` en el navegador (doble clic o Live Server)
-
-### 1.3 Verificación de Funcionamiento
-
-- La aplicación carga en `http://localhost` (o directamente desde archivo)
-- Se debe visualizar el mapa interactivo y el formulario de login
-- Los datos se almacenan automáticamente en localStorage del navegador
+La aplicación permite a integrantes de la comunidad publicar sus propios talleres o centros culturales, y a cualquier visitante explorarlos mediante un listado interactivo con búsqueda por texto y visualización georreferenciada en mapa. No requiere infraestructura de servidor ni base de datos externa: toda la persistencia se gestiona mediante la API `localStorage` del navegador.
 
 ---
 
-## 2. Arquitectura y Estructura del Proyecto
+## Índice
 
-### 2.1 Diagrama Estructural
+- [Características principales](#características-principales)
+- [Arquitectura y stack tecnológico](#arquitectura-y-stack-tecnológico)
+- [Estructura del proyecto](#estructura-del-proyecto)
+- [Módulos de la aplicación](#módulos-de-la-aplicación)
+- [Flujos de usuario](#flujos-de-usuario)
+- [Instrucciones de despliegue y ejecución](#instrucciones-de-despliegue-y-ejecución)
+- [Dependencias externas](#dependencias-externas)
+- [Consideraciones de seguridad y limitaciones](#consideraciones-de-seguridad-y-limitaciones)
+
+---
+
+## Características Principales
+
+- **Exploración pública** de talleres y centros culturales sin necesidad de autenticación.
+- **Búsqueda en tiempo real** por nombre del taller o dirección.
+- **Mapa interactivo** (Leaflet.js + OpenStreetMap) con marcadores geolocalizados para cada actividad.
+- **Registro de usuarios** (*colaboradores*) con validación de campos en el cliente.
+- **Gestión de talleres autenticada**: creación y eliminación de talleres propios.
+- **Sección personal** "Mis Talleres" para que cada colaborador administre sus publicaciones.
+- **Geocodificación automática** de direcciones mediante la API USIG del Gobierno de la Ciudad de Buenos Aires.
+- **Persistencia local** mediante `localStorage`; sin backend ni base de datos externa.
+
+---
+
+## Arquitectura y Stack Tecnológico
+
+| Capa | Tecnología |
+|---|---|
+| Maquetado | HTML5 semántico |
+| Estilos | CSS3 (archivos por vista) |
+| Lógica de negocio | JavaScript ES6+ (vanilla, sin frameworks) |
+| Mapas | [Leaflet.js](https://leafletjs.com/) v1.x (CDN) |
+| Tiles cartográficos | OpenStreetMap |
+| Geocodificación | API USIG — Gobierno de la Ciudad de Buenos Aires |
+| Persistencia | `localStorage` del navegador |
+| Hosting recomendado | Cualquier servidor HTTP estático (GitHub Pages, Netlify, Live Server, etc.) |
+
+La aplicación sigue un patrón de **módulos JavaScript independientes** cargados secuencialmente en el HTML. Cada módulo expone funciones globales que son invocadas por `app.js` (coordinador principal) o directamente desde los atributos de evento del HTML.
+
+---
+
+## Estructura del Proyecto
 
 ```
-CentroCultural/
-├── Archivos HTML (páginas principales)
-│   ├── index.html                      # Portal principal
-│   ├── registro.html                   # Registro de colaboradores
-│   ├── pantallaUsuario.html           # Panel de administración
-│   └── misTalleres.html               # Mis talleres
+CentroCultural-main/
 │
-├── Archivos CSS (presentación)
-│   ├── style.css                      # Estilos globales
-│   ├── style-registro.css             # Estilos de registro
-│   ├── style-pantallaUsuario.css      # Estilos del panel
-│   └── style-misTalleres.css          # Estilos de talleres
+├── index.html                  # Página principal (visitante / usuario autenticado)
+├── registro.html               # Formulario de registro de nuevos colaboradores
+├── pantallaUsuario.html        # Panel del colaborador autenticado (registrar talleres)
+├── misTalleres.html            # Vista personal: talleres del usuario en sesión
 │
-├── app.js                             # Orquestador principal
-├── img/                               # Recursos multimedia
+├── app.js                      # Coordinador principal; inicializa módulos al cargar el DOM
 │
-└── modulos/                           # Módulos funcionales
-    ├── autenticacion.js               # Gestión de usuarios y sesiones
-    ├── talleres.js                    # CRUD de actividades
-    ├── mapa.js                        # Integración de mapas
-    ├── busqueda.js                    # Filtrado en tiempo real
-    └── validaciones.js                # Validación de datos
-```
-
-### 2.2 Descripción de Módulos
-
-| Módulo | Funcionalidad | Responsabilidades |
-|--------|--------------|-------------------|
-| **autenticacion.js** | Gestión de usuarios | Registro, login, sesiones, navegación dinámica |
-| **talleres.js** | CRUD de actividades | Crear, leer, eliminar talleres; renderizar en UI |
-| **mapa.js** | Geolocalización | Inicializar mapa, gestionar marcadores, geocodificar |
-| **busqueda.js** | Filtrado | Búsqueda por nombre/dirección en tiempo real |
-| **validaciones.js** | Control de datos | Validar tipos, formatos y campos obligatorios |
-
-### 2.3 Patrón de Arquitectura
-
-La aplicación sigue un patrón **modular con separación de responsabilidades**:
-- **app.js** actúa como orquestador central (inicializador)
-- Cada módulo gestiona un dominio específico
-- Las validaciones son centralizadas en un módulo dedicado
-- El almacenamiento de datos utiliza localStorage
-
----
-
-## 3. Características Principales
-
-### 3.1 Para Usuarios No Autenticados
-
-- Exploración de centros y talleres en tiempo real
-- Búsqueda por nombre de actividad o dirección
-- Visualización interactiva en mapa geográfico
-- Acceso a información general del Centro Cultural
-
-### 3.2 Para Usuarios Autenticados (Colaboradores)
-
-- Registro seguro de nuevos talleres con validación
-- Panel de administración personal ("Mis Talleres")
-- Gestión completa: crear, visualizar y eliminar actividades
-- Búsqueda y filtrado dentro de talleres propios
-- Mapa interactivo con ubicaciones de actividades
-
----
-
-## 4. Navegación de la Plataforma
-
-### 4.1 Flujo de Usuario No Autenticado
-
-```
-Inicio (index.html)
-├─→ Ver información general
-├─→ Buscar talleres en mapa
-└─→ Opción: Ir a Registro
-```
-
-### 4.2 Flujo de Usuario Autenticado
-
-```
-Login (index.html)
-├─→ Panel del Colaborador (pantallaUsuario.html)
-│   ├─→ Registrar nuevo taller
-│   └─→ Ir a "Mis Talleres"
+├── modulos/
+│   ├── autenticacion.js        # Registro, login, logout y gestión de sesión
+│   ├── talleres.js             # CRUD de talleres y renderizado de tarjetas
+│   ├── mapa.js                 # Inicialización de Leaflet, marcadores y geocodificación
+│   ├── busqueda.js             # Filtrado en tiempo real por nombre y dirección
+│   └── validaciones.js         # Funciones de validación reutilizables (email, teléfono, URL, etc.)
 │
-├─→ Mis Talleres (misTalleres.html)
-│   ├─→ Ver talleres propios
-│   ├─→ Buscar/filtrar
-│   └─→ Eliminar taller
+├── style.css                   # Estilos globales (index.html)
+├── style-registro.css          # Estilos para registro.html
+├── style-pantallaUsuario.css   # Estilos para pantallaUsuario.html
+├── style-misTalleres.css       # Estilos para misTalleres.html
 │
-└─→ Explorar todos los talleres (index.html → Centros)
-```
-
-### 4.3 Secciones Principales
-
-| Sección | URL | Acceso | Descripción |
-|---------|-----|--------|------------|
-| Inicio | index.html | Público | Página principal, login y exploración |
-| Registro | registro.html | Público | Formulario de registro de colaboradores |
-| Panel | pantallaUsuario.html | Autenticado | Crear y gestionar talleres |
-| Mis Talleres | misTalleres.html | Autenticado | Visualizar actividades propias |
-
----
-
-## 5. Sistema de Validación de Datos
-
-### 5.1 Validaciones en Registro de Colaboradores
-
-| Campo | Tipo | Restricciones | Obligatorio |
-|-------|------|---------------|------------|
-| Nombre | Texto | Solo letras, 2+ caracteres | ✓ |
-| Apellido | Texto | Solo letras, 2+ caracteres | ✓ |
-| Teléfono | Tel | 10+ dígitos, múltiples formatos | ✓ |
-| Email | Email | Formato RFC válido | ✓ |
-| Contraseña | Password | 6+ caracteres, 1 mayúscula, 1 número | ✓ |
-
-### 5.2 Validaciones en Registro de Talleres
-
-| Campo | Tipo | Restricciones | Obligatorio |
-|-------|------|---------------|------------|
-| Nombre | Texto | 3+ caracteres | ✓ |
-| Descripción | Textarea | 10+ caracteres | ✓ |
-| Rubro | Select | Opciones predefinidas | ✓ |
-| Dirección | Texto | Formato: "Calle NRO, Localidad" + geocodificación | ✓ |
-| Horarios | Select | Franja predefinida | ✓ |
-| Teléfono | Tel | 10+ dígitos | ✓ |
-| Actividades | Texto | Libre | ✗ |
-| Redes Sociales | Texto | Libre | ✗ |
-| Imagen | URL | URL válida si se completa | ✗ |
-
-### 5.3 Mecanismo de Validación
-
-```javascript
-// Flujo de validación
-1. Captura de datos del formulario
-2. Validación de tipo de dato
-3. Validación de formato específico
-4. Mensaje de error contextualizado (si aplica)
-5. Persistencia en localStorage
-```
-
-**Características:**
-- Mensajes de error específicos por campo
-- Resaltado visual de campos inválidos (rojo)
-- Validación antes de guardar datos
-- Límites de caracteres implementados
-
----
-
-## 6. Tecnologías Utilizadas
-
-### 6.1 Stack Tecnológico
-
-| Capa | Tecnología | Propósito |
-|------|-----------|----------|
-| Frontend | HTML5 | Estructura y semántica |
-| Estilos | CSS3 | Presentación responsiva |
-| Lógica | JavaScript (Vanilla) | Comportamiento dinámico |
-| Mapas | Leaflet.js | Visualización geográfica |
-| Geolocalización | API USIG BA | Geocodificación de direcciones |
-| Persistencia | localStorage | Almacenamiento local |
-
-### 6.2 Justificación Técnica
-
-- **JavaScript Vanilla**: Sin dependencias externas; máxima portabilidad
-- **Leaflet.js**: Librería ligera y open-source para mapas
-- **localStorage**: Adecuado para prototipo; facilita demostración sin backend
-- **API USIG**: Geocodificación específica para Buenos Aires
-
----
-
-## 7. Almacenamiento de Datos
-
-Los datos se almacenan en localStorage bajo las siguientes claves:
-
-```javascript
-// Estructura de almacenamiento
-{
-  "colaboradoresPortal": [
-    {
-      "id": 1,
-      "nombre": "...",
-      "apellido": "...",
-      "correo": "...",
-      "telefono": "...",
-      "contrasenia": "..."
-    }
-  ],
-  "talleres": [
-    {
-      "id": 1,
-      "idColaborador": 1,
-      "nombre": "...",
-      "descripcion": "...",
-      "rubro": "...",
-      "direccion": "...",
-      "lat": -34.5431,
-      "lng": -58.7126,
-      // ... otros campos
-    }
-  ],
-  "usuarioActivo": { /* objeto usuario activo */ }
-}
-```
-
-**Limitaciones:**
-- Los datos se pierden al limpiar caché del navegador
-- Sin sincronización entre dispositivos
-- Seguridad limitada (credenciales en texto plano)
-
----
-
-## 8. Guía de Mantenimiento y Extensión
-
-### 8.1 Agregar un Nuevo Campo a Talleres
-
-1. Adicionar `<input>` o `<select>` en `pantallaUsuario.html`
-2. Crear función validadora en `modulos/validaciones.js`
-3. Actualizar `registrarTaller()` en `modulos/talleres.js`
-4. Incluir campo en `crearTarjeta()` para renderizar
-
-### 8.2 Modificar Opciones de Selectores
-
-Editar los `<option>` correspondientes en `pantallaUsuario.html`:
-- Rubros: línea ~70
-- Franjas horarias: línea ~85
-
-### 8.3 Personalizar Estilos
-
-Cada página tiene CSS independiente:
-- `style.css` - Estilos base globales
-- `style-registro.css` - Formulario de registro
-- `style-pantallaUsuario.css` - Panel del colaborador
-- `style-misTalleres.css` - Visualización de talleres
-
----
-
-## 9. Consideraciones Funcionales
-
-### 9.1 Restricciones de Acceso
-
-- ✓ No requiere autenticación: exploración y búsqueda
-- ✗ Requiere autenticación: crear/editar/eliminar talleres
-
-### 9.2 Alcance Geográfico
-
-- Geocodificación limitada a Buenos Aires (API USIG)
-- Mapas centrados en coordenadas: -34.5431, -58.7126
-
-### 9.3 Ciclo de Vida de Sesión
-
-```
-Usuario accede → Autentica → sesión guardada en localStorage
-    ↓
-Navega por aplicación → Sesión persiste
-    ↓
-Cierra sesión → localStorage["usuarioActivo"] se elimina
+└── img/                        # Recursos gráficos (imágenes de muestra, ícono de mapa, QR)
 ```
 
 ---
 
-## 10. Perspectivas Futuras
+## Módulos de la Aplicación
 
-### 10.1 Mejoras Técnicas Recomendadas
+### `autenticacion.js`
+Gestiona el ciclo de vida de la sesión del usuario. Utiliza `localStorage` con dos claves: `colaboradoresPortal` (lista de usuarios registrados) y `usuarioActivo` (objeto del usuario en sesión). Expone las funciones:
 
-- [ ] Backend con base de datos relacional
-- [ ] Autenticación con JWT
-- [ ] HTTPS y validación de email
-- [ ] API REST para operaciones CRUD
-- [ ] Caching de imágenes
-- [ ] Progressive Web App (PWA)
+- `registrarColaborador()`: valida y persiste un nuevo colaborador.
+- `iniciarSesion()`: autentica al usuario comparando credenciales en `localStorage`.
+- `cerrarSesion()`: elimina la clave `usuarioActivo` y redirige al inicio.
+- `actualizarNav()`: modifica dinámicamente el menú de navegación según el estado de sesión.
+- `mostrarUsuario()`: inyecta el nombre del colaborador activo en el encabezado.
 
-### 10.2 Expansiones Funcionales
+### `talleres.js`
+Administra la entidad central del sistema. Los talleres se almacenan en `localStorage` bajo la clave `talleres`. Expone:
 
-- [ ] Búsqueda avanzada con filtros múltiples
-- [ ] Sistema de ratings y comentarios
-- [ ] Notificaciones por email
-- [ ] Aplicación móvil nativa
-- [ ] Panel administrativo
-- [ ] Reportes de actividad
+- `registrarTaller()`: valida los campos del formulario, realiza geocodificación asíncrona y persiste el nuevo taller.
+- `eliminarTaller(idTaller)`: verifica autoría y elimina el taller del almacenamiento.
+- `mostrarTalleresDisponibles()`: renderiza todos los talleres en `index.html`.
+- `mostrarMisTalleres()`: renderiza únicamente los talleres del colaborador activo en `misTalleres.html`.
+- `crearMarcador()` / `crearTarjeta()`: renderizan la representación visual de cada taller en mapa y lista respectivamente, con interacción bidireccional (clic en tarjeta → centra mapa; clic en marcador → resalta tarjeta).
+
+### `mapa.js`
+Encapsula la integración con Leaflet.js y la API de geocodificación de USIG. Expone:
+
+- `inicializarMapa()`: crea la instancia del mapa centrada en las coordenadas de la zona UNGS (`-34.5431, -58.7126`).
+- `obtenerCoordenadas(direccion)`: consulta de forma asíncrona la API de USIG y retorna `{ lat, lng }` o `null` si la dirección no puede normalizarse.
+- `limpiarMarcadores()`: elimina del mapa todos los marcadores activos antes de re-renderizar.
+
+### `busqueda.js`
+Implementa el filtrado en tiempo real sobre la lista de talleres visible:
+
+- `inicializarBuscador()`: adjunta el listener de evento `input` al campo de búsqueda.
+- `filtrarTalleres()`: itera sobre las tarjetas del DOM y los marcadores del mapa, mostrando u ocultando cada elemento según si el texto ingresado coincide con el nombre o la dirección del taller.
+
+### `validaciones.js`
+Biblioteca de funciones de validación sin efectos secundarios. Incluye validadores de formato (`esEmail`, `esTelefono`, `esUrl`, `esContraseniaValida`) y de campo (`validarNombre`, `validarDescripcion`, `validarDireccion`, etc.). Cada función de campo retorna un objeto `{ valido: Boolean, error: String }`.
 
 ---
 
-## 11. Referencias y Documentación
+## Flujos de Usuario
 
-- [Documentación Leaflet.js](https://leafletjs.com/reference.html)
-- [API USIG Buenos Aires](https://servicios.usig.buenosaires.gob.ar/)
-- [MDN - localStorage](https://developer.mozilla.org/es/docs/Web/API/Storage/localStorage)
-- [HTML5 Validation](https://developer.mozilla.org/es/docs/Learn/Forms/Form_validation)
+### Usuario visitante (no autenticado)
+
+```
+Accede a index.html
+  └─> Visualiza listado de talleres registrados
+  └─> Busca por nombre o dirección (filtrado en tiempo real)
+  └─> Interactúa con el mapa (clic en marcador → resalta tarjeta)
+  └─> Puede registrarse como colaborador (→ registro.html)
+  └─> Puede iniciar sesión desde el formulario en index.html
+```
+
+### Usuario colaborador (autenticado)
+
+```
+Inicia sesión en index.html → redirigido a pantallaUsuario.html
+  └─> Registra un nuevo taller (con geocodificación automática de la dirección)
+  └─> Accede a "Mis Talleres" (→ misTalleres.html)
+      └─> Visualiza sus talleres en lista y mapa
+      └─> Busca entre sus propios talleres
+      └─> Elimina un taller registrado
+  └─> Visualiza todos los talleres publicados (sección "Inicio")
+  └─> Cierra sesión
+```
 
 ---
 
-## 12. Información del Proyecto
+## Instrucciones de Despliegue y Ejecución
 
-**Institución:** Centro Cultural UNGS  
-**Objetivo:** Plataforma comunitaria de difusión de actividades culturales  
-**Versión:** 1.0  
-**Última actualización:** Mayo 2026  
-**Licencia:** Abierta (uso comunitario)
+La aplicación es completamente estática: no requiere Node.js, Python, ni ningún servidor de aplicaciones. Sin embargo, **no puede abrirse directamente desde el sistema de archivos** (`file://`) porque las peticiones `fetch` a la API de geocodificación de USIG serán bloqueadas por la política CORS del navegador. Es necesario servirla a través de un servidor HTTP, incluso en entorno local.
 
-Para reportar problemas o sugerir mejoras, contactar al equipo de desarrollo del Centro Cultural UNGS.
+---
+
+### Opción 1 — Live Server (recomendado para desarrollo)
+
+Requiere [Visual Studio Code](https://code.visualstudio.com/) con la extensión **Live Server** instalada.
+
+1. Abrir la carpeta del proyecto en VS Code:
+   ```
+   Archivo → Abrir carpeta → CentroCultural-main/
+   ```
+2. Hacer clic derecho sobre `index.html` en el explorador de archivos.
+3. Seleccionar **"Open with Live Server"**.
+4. El navegador se abrirá automáticamente en `http://127.0.0.1:5500/index.html`.
+
+---
+
+### Opción 2 — GitHub Pages (despliegue en producción)
+
+1. Subir el contenido de `CentroCultural-main/` a un repositorio público de GitHub.
+2. En la configuración del repositorio, ir a **Settings → Pages**.
+3. En "Source", seleccionar la rama principal (`main`) y la carpeta raíz (`/`).
+4. Guardar. GitHub Pages publicará el sitio en `https://<usuario>.github.io/<repositorio>/`.
+
+> **Nota:** GitHub Pages sirve el sitio sobre HTTPS, por lo que las peticiones a la API de USIG (también HTTPS) funcionarán correctamente sin configuración adicional.
+
+---
+
+### Verificación del entorno
+
+Una vez iniciado el servidor, se recomienda verificar que los siguientes puntos funcionen correctamente:
+
+| Funcionalidad | Indicador de éxito |
+|---|---|
+| Carga del mapa | Se visualiza el mapa de OpenStreetMap centrado en la zona UNGS |
+| Registro de usuario | El formulario valida los campos y redirige al panel de usuario |
+| Registro de taller | El formulario acepta una dirección real y la geocodifica (aparece un marcador en el mapa) |
+| Búsqueda | Escribir en el campo de búsqueda filtra la lista y los marcadores del mapa en tiempo real |
+
+---
+
+## Dependencias Externas
+
+| Dependencia | Versión | Propósito | Modo de carga |
+|---|---|---|---|
+| [Leaflet.js](https://leafletjs.com/) | Última estable | Mapas interactivos y gestión de marcadores | CDN (`unpkg.com`) |
+| [OpenStreetMap](https://www.openstreetmap.org/) | — | Proveedor de tiles cartográficos | Servicio externo |
+| [API USIG GCBA](https://servicios.usig.buenosaires.gob.ar/) | — | Normalización y geocodificación de direcciones | Servicio externo (fetch) |
+
+No se utilizan gestores de paquetes (npm, yarn) ni herramientas de construcción (webpack, Vite). Todas las dependencias de terceros se cargan desde CDN en tiempo de ejecución.
+
+---
+
+## Consideraciones de Seguridad y Limitaciones
+
+- **Persistencia en cliente**: los datos (usuarios y talleres) se almacenan únicamente en el `localStorage` del navegador del usuario. No existe sincronización entre dispositivos ni respaldo en servidor. Limpiar los datos del navegador elimina toda la información.
+- **Contraseñas en texto plano**: las credenciales se almacenan sin cifrado en `localStorage`. Esta implementación es adecuada para prototipos académicos, pero no es apta para producción. En un entorno real se requeriría autenticación en servidor con hash de contraseñas (bcrypt, Argon2, etc.).
+- **Sin autorización en servidor**: la validación de autoría de talleres (que un usuario solo pueda eliminar los suyos) se realiza íntegramente en el cliente y puede ser eludida manipulando `localStorage`. Un sistema productivo requeriría validación en backend.
+- **Geocodificación limitada al área de Buenos Aires**: la API de USIG normaliza únicamente direcciones dentro del territorio de la Ciudad Autónoma de Buenos Aires. Direcciones de otras localidades del Gran Buenos Aires o del resto del país no serán geocodificadas correctamente.
+- **Compatibilidad de navegadores**: la aplicación requiere un navegador moderno compatible con ES6+, la API `fetch`, `localStorage` y `URL`. Se recomienda la versión actual de Chrome, Firefox, Edge o Safari.
+
+---
+
+## Contexto Académico
+
+Este proyecto es un **prototipo funcional** desarrollado en el marco de la materia **Ingeniería de Software** de la Universidad Nacional de General Sarmiento (UNGS).
+
+**Grupo 2 — Integrantes:**
+
+| Apellido y nombre |
+|---|
+| Rebolini, Ornella |
+| Schmied, Barbara |
+| Apaza, Brandon |
+| Perez, Daiana |
